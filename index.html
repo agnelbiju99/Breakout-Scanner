@@ -1882,7 +1882,7 @@ async function analyzeStock(stock, volThresh, minMove, minAvgVol = 0) {
 
 async function scanLive(volThresh, minMove, minAvgVol = 0) {
   const results = [];
-  const batchSize = 6; // Yahoo Finance handles parallel requests well
+  const batchSize = 3; // keep low to avoid Yahoo Finance rate limiting
   const wl = getWatchlist();
   for (let i = 0; i < wl.length; i += batchSize) {
     const batch = wl.slice(i, i + batchSize);
@@ -1892,11 +1892,11 @@ async function scanLive(volThresh, minMove, minAvgVol = 0) {
     const batchResults = await Promise.all(
       batch.map(s => Promise.race([
         analyzeStock(s, volThresh, minMove, minAvgVol),
-        new Promise(res => setTimeout(() => { log(`${s.sym}: timeout`, 'warn'); res(null); }, 25000))
+        new Promise(res => setTimeout(() => { log(`${s.sym}: timeout`, 'warn'); res(null); }, 20000))
       ]))
     );
     batchResults.forEach(r => { if (r) results.push(r); });
-    await sleep(200); // short delay between batches
+    await sleep(400); // pause between batches — prevents rate limiting
   }
   return results;
 }
